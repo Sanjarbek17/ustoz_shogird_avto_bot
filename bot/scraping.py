@@ -15,8 +15,8 @@ ustoz_shogird = '@UstozShogird'
 
 client = TelegramClient('anon', API_ID, API_HASH)
 
-db = TinyDB('data_json/data.json', indent=4, separators=(',', ': '), encoding='utf-8')
-hashdb = TinyDB('data_json/hashtag.json', sort_keys=True, indent=4, separators=(',', ': '))
+db = TinyDB('data_json/data.json', indent=4, separators=(',', ': '))
+hashdb = TinyDB('data_json/hashtag.json', indent=4, separators=(',', ': '))
 
 datadb = db.table('data')
 

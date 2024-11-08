@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 import os
 
 userdb = TinyDB('data_json/user.json', indent=4, separators=(',', ': '))
-datadb = TinyDB('data_json/data.json', indent=4, separators=(',', ': '), encoding='utf-8')
+datadb = TinyDB('data_json/data.json', indent=4, separators=(',', ': '))
 
 Data = Query()
 data = datadb.table('data')

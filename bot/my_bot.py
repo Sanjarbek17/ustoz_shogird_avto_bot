@@ -7,8 +7,8 @@ from tinydb import TinyDB, Query
 from core.getting_data import to_text
 
 userdb = TinyDB('data_json/user.json', indent=4, separators=(',', ': '))
-datadb = TinyDB('data_json/data.json', indent=4, separators=(',', ': '), encoding='utf-8')
-hashdb = TinyDB('data_json/hashtag.json', sort_keys=True, indent=4, separators=(',', ': '))
+datadb = TinyDB('data_json/data.json', indent=4, separators=(',', ': '))
+hashdb = TinyDB('data_json/hashtag.json', indent=4, separators=(',', ': '))
 
 Data = Query()
 data = datadb.table('data')
@@ -66,7 +66,7 @@ def start(update, context) -> None:
         ]
     ]
 
-    reply_markup = ReplyKeyboardMarkup(keyboard)
+    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
     
     update.message.reply_html(
         rf"Hi {user.mention_html()}!",
