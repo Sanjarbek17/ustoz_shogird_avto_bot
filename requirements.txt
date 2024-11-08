@@ -2,4 +2,4 @@ python-dotenv
 python-telegram-bot==13.15
 tinydb
 urllib3==1.26.15
-telethon  
+telethon

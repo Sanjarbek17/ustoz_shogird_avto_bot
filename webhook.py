@@ -9,6 +9,10 @@ TOKEN = os.getenv("TOKEN")
 if not TOKEN:
     raise ValueError("Bot token not found. Please set the TOKEN environment variable.")
 
+def set_webhook(url):
+    updater = Updater(TOKEN)
+    updater.bot.set_webhook(url=url)
+
 def process_single_update(update_json):
     try:
         updater = Updater(TOKEN)
