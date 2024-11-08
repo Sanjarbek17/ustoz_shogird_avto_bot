@@ -11,6 +11,7 @@ Press Ctrl-C on the command line or send a signal to the process to stop the
 bot.
 """
 from pprint import pprint
+from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, MessageHandler, Filters, ContextTypes
 
 import os
 from dotenv import load_dotenv
@@ -37,7 +38,7 @@ TOKEN = os.getenv('TOKEN')
 import logging
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup, Update
-from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters, CallbackQueryHandler
+
 
 # Enable logging
 logging.basicConfig(
@@ -51,7 +52,7 @@ logger = logging.getLogger(__name__)
 
 # Define a few command handlers. These usually take the two arguments update and
 # context.
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+def start(update, context) -> None:
     """Send a message when the command /start is issued."""
     user = update.effective_user
     
@@ -80,17 +81,17 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     reply_markup = ReplyKeyboardMarkup(keyboard)
     
-    await update.message.reply_html(
+    update.message.reply_html(
         rf"Hi {user.mention_html()}!",
         reply_markup=reply_markup,
     )
 
 
-async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+def help_command(update: Update, context: ContextTypes) -> None:
     """Send a message when the command /help is issued."""
-    await update.message.reply_text("Help!")
+    update.message.reply_text("Help!")
 
-async def hashtag_keyboards(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+def hashtag_keyboards(update: Update, context: ContextTypes) -> None:
     """Sends inline keyboard contains hashtags."""
     search = hash_table.search(Hashtag.hashtag.exists())
     search.sort(key=lambda x: x['count'], reverse=True)
@@ -105,14 +106,14 @@ async def hashtag_keyboards(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     user = update.effective_user
     user_hashtags = user_table.get(User.id == user.id)['hashtags']
     
-    await update.message.reply_text(
+    update.message.reply_text(
 f'''Currently hashtags: {" ".join(user_hashtags)}
 You can choose one of these by tapping, or delete if it exists.
 You can also add your own hashtag by typing: #yourOwnHashtag,''',
         reply_markup=reply_markup
     )
 
-async def my_hashtag_keyboards(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+def my_hashtag_keyboards(update: Update, context: ContextTypes) -> None:
     """Sends inline keyboard contains hashtags."""
     # get user hashtags
     user = update.effective_user
@@ -127,18 +128,18 @@ async def my_hashtag_keyboards(update: Update, context: ContextTypes.DEFAULT_TYP
     user_hashtags = user_table.get(User.id == user.id)['hashtags']
     
     if len(user_hashtags) == 0:
-        await update.message.reply_text(f'Currently hashtags None', reply_markup=reply_markup)
+        update.message.reply_text(f'Currently hashtags None', reply_markup=reply_markup)
     else:
-        await update.message.reply_text(f'Currently hashtags {' '.join(user_hashtags)}', reply_markup=reply_markup)
+        update.message.reply_text(f'Currently hashtags {' '.join(user_hashtags)}', reply_markup=reply_markup)
 
 
-async def add_hashtag(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+def add_hashtag(update: Update, context: ContextTypes) -> None:
     """Add hashtag to user hashtags."""
     text = update.message.text
     
     # check text has valid hashtag
     if not text.startswith('#'):
-        await update.message.reply_text('Please enter a valid hashtag')
+        update.message.reply_text('Please enter a valid hashtag')
         return
     
     # if multiple hashtags
@@ -157,9 +158,9 @@ async def add_hashtag(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     # convert set to list
     user_hashtags = list(user_hashtags)
     user_table.update({'hashtags': user_hashtags}, User.id == user.id)
-    await update.message.reply_text(f'Hashtag {update.message.text} added')
+    update.message.reply_text(f'Hashtag {update.message.text} added')
 
-async def search(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+def search(update: Update, context: ContextTypes) -> None:
     """Send a message when the text search is issued."""
     # get user hashtags
     user = update.effective_user
@@ -169,18 +170,18 @@ async def search(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     search = data.search(Data.hashtags.all(user_hashtags))
     # logger.info(search)
     if len(search) == 0:
-        await update.message.reply_text('No data found')
+        update.message.reply_text('No data found')
         return
 
     for dct in search:
         
         text = to_text(dct)
         try:
-            await update.message.reply_text(text)
+            update.message.reply_text(text)
         except Exception as e:
             logger.error(f'error {e}')
             
-async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+def button(update: Update, context: ContextTypes) -> None:
     """Parses the CallbackQuery and updates the message text."""
     user = update.effective_user
     query = update.callback_query
@@ -196,7 +197,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     # CallbackQueries need to be answered, even if no notification to the user is needed
     # Some clients may have trouble otherwise. See https://core.telegram.org/bots/api#callbackquery
-    await query.answer()
+    query.answer()
     logger.info(query.data)
     user_hashtags = set(user_table.get(User.id == user.id)['hashtags'])
     
@@ -208,12 +209,12 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         
         user_hashtags = list(user_hashtags)
         user_table.update({'hashtags': user_hashtags}, User.id == user.id)
-        await query.edit_message_text(text=f"Selected option: {' '.join(user_hashtags)}", reply_markup=reply_markup)
+        query.edit_message_text(text=f"Selected option: {' '.join(user_hashtags)}", reply_markup=reply_markup)
 
-    # await query.edit_message_text(text=f"Selected option: {query.data}")
+    # query.edit_message_text(text=f"Selected option: {query.data}")
 
           
-async def my_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+def my_button(update: Update, context: ContextTypes) -> None:
     """Parses the CallbackQuery and updates the message text."""
     user = update.effective_user
     query = update.callback_query
@@ -225,7 +226,7 @@ async def my_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     # CallbackQueries need to be answered, even if no notification to the user is needed
     # Some clients may have trouble otherwise. See https://core.telegram.org/bots/api#callbackquery
-    await query.answer()
+    query.answer()
     logger.info(query.data)
     data = query.data[2:]
     user_hashtags = set(user_table.get(User.id == user.id)['hashtags'])
@@ -243,11 +244,11 @@ async def my_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_table.update({'hashtags': user_hashtags}, User.id == user.id)
     
     if len(user_hashtags) == 0:
-        await query.edit_message_text(text=f"Selected option: None", reply_markup=reply_markup)
+        query.edit_message_text(text=f"Selected option: None", reply_markup=reply_markup)
     else:
-        await query.edit_message_text(text=f"Selected option: {' '.join(user_hashtags)}", reply_markup=reply_markup)
+        query.edit_message_text(text=f"Selected option: {' '.join(user_hashtags)}", reply_markup=reply_markup)
 
-async def send_data(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+def send_data(update: Update, context: ContextTypes) -> None:
     """Send a message according to all users hashtags."""
     
     # get users ids and hashtags
@@ -261,7 +262,7 @@ async def send_data(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         for dct in search:
             text = to_text(dct)
             try:
-                await context.bot.send_message(user['id'], text)
+                context.bot.send_message(user['id'], text)
             except Exception as e:
                 logger.error(f'error {e}')
 
@@ -274,22 +275,25 @@ def handler(application):
     application.add_handler(CommandHandler("help", help_command))
 
     # on non command i.e message - echo the message on Telegram
-    application.add_handler(MessageHandler(filters.Text("Add Hashtags"), hashtag_keyboards))
-    application.add_handler(MessageHandler(filters.Text("My Hashtags"), my_hashtag_keyboards))
-    application.add_handler(MessageHandler(filters.Text("Search"), search))
-    application.add_handler(MessageHandler(filters.Regex(r'^#'), add_hashtag))
+    application.add_handler(MessageHandler(Filters.text("Add Hashtags"), hashtag_keyboards))
+    application.add_handler(MessageHandler(Filters.text("My Hashtags"), my_hashtag_keyboards))
+    application.add_handler(MessageHandler(Filters.text("Search"), search))
+    application.add_handler(MessageHandler(Filters.regex(r'^#'), add_hashtag))
     
     return application
 
 def main() -> None:
     """Start the bot."""
     # Create the Application and pass it your bot's token.
-    application = Application.builder().token(TOKEN).build()
+    updater = Updater(TOKEN)
+    
+    application = updater.dispatcher
 
     application = handler(application)
 
     # Run the bot until the user presses Ctrl-C
-    application.run_polling(allowed_updates=Update.ALL_TYPES)
+    updater.start_polling()
+    updater.idle()
 
 
 if __name__ == "__main__":

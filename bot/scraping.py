@@ -28,9 +28,9 @@ datadb = db.table('data')
 Hashtag = Query()
 hashtag = hashdb.table('hashtag')
 
-async def main():
+async def main(limit=100):
     datadb.truncate()
-    async for message in client.iter_messages(ustoz_shogird, limit=100):
+    async for message in client.iter_messages(ustoz_shogird, limit=limit):
         lst = message.text.split('\n\n')
         if len(lst) < 4:
             print(lst)
@@ -38,8 +38,8 @@ async def main():
         dct = to_json(lst)
         datadb.insert(dct)
 
-async def get_hashtags():
-    async for message in client.iter_messages(ustoz_shogird, limit=500):
+async def get_hashtags(limit=100):
+    async for message in client.iter_messages(ustoz_shogird, limit=limit):
         lst = message.text.split('\n')
         
         for line in lst:
@@ -55,13 +55,14 @@ async def get_hashtags():
                         dct = hashtag.get(Hashtag.hashtag == h)
                         # update count
                         hashtag.update({'count': dct['count'] + 1}, Hashtag.hashtag == h)
-def run_main():
-    with client:
-        client.loop.run_until_complete(main())
 
-def run_hashtags():
+def run_main(limit=100):
     with client:
-        client.loop.run_until_complete(get_hashtags())
+        client.loop.run_until_complete(main(limit))
+
+def run_hashtags(limit=100):
+    with client:
+        client.loop.run_until_complete(get_hashtags(limit))
 
 if __name__ == '__main__':
     run_main()

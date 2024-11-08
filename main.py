@@ -1,3 +1,4 @@
+import time
 from bot.my_bot import main
 
 import telegram
@@ -7,7 +8,6 @@ from core.getting_data import to_text
 from telegram import Bot
 from dotenv import load_dotenv
 import os
-import asyncio
 
 userdb = TinyDB('data_json/user.json', indent=4, separators=(',', ': '))
 datadb = TinyDB('data_json/data.json', indent=4, separators=(',', ': '), encoding='utf-8')
@@ -22,7 +22,7 @@ token = os.getenv('TOKEN')
 
 bot = Bot(token=token)
 
-async def send_data() -> None:
+def send_data() -> None:
     """Send a message according to all users hashtags."""
     # get users ids and hashtags
     users = user_table.all()
@@ -34,17 +34,17 @@ async def send_data() -> None:
         for dct in search:
             text = to_text(dct)
             try:
-                await bot.send_message(chat_id=user['id'], text=text)
-                await asyncio.sleep(5)  # Add a delay of 1 second between messages
+                bot.send_message(chat_id=user['id'], text=text)
+                time.sleep(5)  # Add a delay of 1 second between messages
             except telegram.error.RetryAfter as e:
-                await asyncio.sleep(e.retry_after)
+                time.sleep(e.retry_after)
                 continue
             except Exception as e:
                 continue
 
 if __name__ == '__main__':
     if 'send_data' in os.sys.argv:
-        asyncio.run(send_data())
+        send_data()
     elif 'hashtags' in os.sys.argv:
         from bot.scraping import run_hashtags
         run_hashtags()

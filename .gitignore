@@ -2,6 +2,9 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=venv,python,dotenv
 anon.session
 anon2.session
+data_json/data.json
+data_json/user.json
+
 ### dotenv ###
 .env
 
