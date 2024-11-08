@@ -1,7 +1,6 @@
-import asyncio
 import os
 from telegram import Update, ForceReply
-from telegram.ext import Application, CommandHandler, ContextTypes
+from telegram.ext import Updater, CommandHandler, ContextTypes
 from telegram.error import NetworkError
 
 from bot.my_bot import handler
@@ -10,23 +9,16 @@ TOKEN = os.getenv("TOKEN")
 if not TOKEN:
     raise ValueError("Bot token not found. Please set the TOKEN environment variable.")
 
-async def init_bot():
+def process_single_update(update_json):
     try:
-        application = Application.builder().token(TOKEN).build()
+        updater = Updater(TOKEN)
+        
+        application = updater.dispatcher
         application = handler(application)
-        await application.initialize()
-        return application
-    except NetworkError as e:
-        print(f"Network error during initialization: {e}")
-        raise
-
-async def process_single_update(update_json):
-    try:
-        bot_app = await init_bot()
         # bot_app.start_polling()
-        update = Update.de_json(update_json, bot_app.bot)
-        await bot_app.process_update(update)
-        # await bot_app.shutdown()  # Cleanly shutdown the bot
+        update = Update.de_json(update_json, updater.bot)
+        application.process_update(update)
+        # bot_app.shutdown()  # Cleanly shutdown the bot
     except NetworkError as e:
         print(f"Network error during update processing: {e}")
     except Exception as e:
@@ -62,4 +54,4 @@ if __name__ == '__main__':
         }
     }
     
-    asyncio.run(process_single_update(update_json))
+    process_single_update(update_json)
