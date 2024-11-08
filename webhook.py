@@ -11,7 +11,7 @@ if not TOKEN:
 
 def set_webhook(url):
     updater = Updater(TOKEN)
-    updater.bot.set_webhook(url=url)
+    return updater.bot.set_webhook(url=url)
 
 def process_single_update(update_json):
     try:
@@ -29,7 +29,6 @@ def process_single_update(update_json):
         print(f"An unexpected error occurred: {e}")
 
 if __name__ == '__main__':
-    
     update_json = {"update_id": 7433649,
         "message": {
             "message_id": 473,
