@@ -130,7 +130,7 @@ def my_hashtag_keyboards(update: Update, context: ContextTypes) -> None:
     if len(user_hashtags) == 0:
         update.message.reply_text(f'Currently hashtags None', reply_markup=reply_markup)
     else:
-        update.message.reply_text(f'Currently hashtags {' '.join(user_hashtags)}', reply_markup=reply_markup)
+        update.message.reply_text(f"Currently hashtags {' '.join(user_hashtags)}", reply_markup=reply_markup)
 
 
 def add_hashtag(update: Update, context: ContextTypes) -> None:
@@ -158,7 +158,7 @@ def add_hashtag(update: Update, context: ContextTypes) -> None:
     # convert set to list
     user_hashtags = list(user_hashtags)
     user_table.update({'hashtags': user_hashtags}, User.id == user.id)
-    update.message.reply_text(f'Hashtag {update.message.text} added')
+    update.message.reply_text(f"Hashtag {update.message.text} added")
 
 def search(update: Update, context: ContextTypes) -> None:
     """Send a message when the text search is issued."""
