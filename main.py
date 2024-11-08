@@ -45,11 +45,14 @@ def send_data() -> None:
 if __name__ == '__main__':
     if 'get_data' in os.sys.argv:
         from bot.scraping import run_main
-        run_main()
+        if os.sys.argv[-1].isdigit():
+            run_main(int(os.sys.argv[-1]))
+        else:
+            run_main()
     if 'send_data' in os.sys.argv:
         send_data()
     if 'hashtags' in os.sys.argv:
         from bot.scraping import run_hashtags
         run_hashtags()
-    else:
+    if 'main' in os.sys.argv:
         main()

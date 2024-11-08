@@ -33,7 +33,6 @@ async def main(limit=100):
     async for message in client.iter_messages(ustoz_shogird, limit=limit):
         lst = message.text.split('\n\n')
         if len(lst) < 4:
-            print(lst)
             continue
         dct = to_json(lst)
         datadb.insert(dct)

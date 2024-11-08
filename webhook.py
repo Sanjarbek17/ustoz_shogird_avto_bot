@@ -1,6 +1,6 @@
 import os
-from telegram import Update, ForceReply
-from telegram.ext import Updater, CommandHandler, ContextTypes
+from telegram import Update
+from telegram.ext import Updater
 from telegram.error import NetworkError
 
 from bot.my_bot import handler
