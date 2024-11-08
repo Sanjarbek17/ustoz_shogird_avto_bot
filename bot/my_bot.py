@@ -1,15 +1,3 @@
-"""
-Simple Bot to reply to Telegram messages.
-
-First, a few handler functions are defined. Then, those functions are passed to
-the Application and registered at their respective places.
-Then, the bot is started and runs until we press Ctrl-C on the command line.
-
-Usage:
-Basic Echobot example, repeats messages.
-Press Ctrl-C on the command line or send a signal to the process to stop the
-bot.
-"""
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, MessageHandler, Filters, ContextTypes
 
 import os
@@ -200,15 +188,14 @@ def button(update: Update, context: ContextTypes) -> None:
     logger.info(query.data)
     user_hashtags = set(user_table.get(User.id == user.id)['hashtags'])
     
-    if query.data != 'done':
-        if query.data in user_hashtags:
-            user_hashtags.remove(query.data)
-        else:
-            user_hashtags.add(query.data)
-        
-        user_hashtags = list(user_hashtags)
-        user_table.update({'hashtags': user_hashtags}, User.id == user.id)
-        query.edit_message_text(text=f"Selected option: {' '.join(user_hashtags)}", reply_markup=reply_markup)
+    if query.data in user_hashtags:
+        user_hashtags.remove(query.data)
+    else:
+        user_hashtags.add(query.data)
+    
+    user_hashtags = list(user_hashtags)
+    user_table.update({'hashtags': user_hashtags}, User.id == user.id)
+    query.edit_message_text(text=f"Selected option: {' '.join(user_hashtags)}", reply_markup=reply_markup)
 
     # query.edit_message_text(text=f"Selected option: {query.data}")
 

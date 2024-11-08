@@ -5,7 +5,8 @@ anon2.session
 anon2.session-journal
 data_json/data.json
 data_json/user.json
-
+data_json/dummy.json
+user.json
 ### dotenv ###
 .env
 

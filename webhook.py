@@ -4,6 +4,7 @@ from telegram.ext import Updater
 from telegram.error import NetworkError
 
 from bot.my_bot import handler
+import json
 
 TOKEN = os.getenv("TOKEN")
 if not TOKEN:
@@ -29,32 +30,7 @@ def process_single_update(update_json):
         print(f"An unexpected error occurred: {e}")
 
 if __name__ == '__main__':
-    update_json = {"update_id": 7433649,
-        "message": {
-            "message_id": 473,
-            "from": {
-                "id": 7662812087,
-                "is_bot": False,
-                "first_name": "Saidov Sanjarbek",
-                "username": "Sanjarbek177",
-                "language_code": "en"
-            },
-            "chat": {
-                "id": 7662812087,
-                "first_name": "Saidov Sanjarbek",
-                "username": "Sanjarbek177",
-                "type": "private"
-            },
-            "date": 1731010949,
-            "text": "/start",
-            "entities": [
-                {
-                    "offset": 0,
-                    "length": 6,
-                    "type": "bot_command"
-                }
-            ]
-        }
-    }
-    
+    with open('data_json/dummy.json') as f:
+        update_json = f.read()
+    update_json = json.loads(update_json)
     process_single_update(update_json)

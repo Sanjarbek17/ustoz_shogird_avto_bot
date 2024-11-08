@@ -11,13 +11,9 @@ load_dotenv()
 
 API_ID = os.getenv( 'API_ID' )
 API_HASH = os.getenv( 'API_HASH' )
-TOKEN = os.getenv('TOKEN')
-
-music_bot = '@music_storage1718_bot'
 ustoz_shogird = '@UstozShogird'
 
 client = TelegramClient('anon', API_ID, API_HASH)
-bot = TelegramClient('anon2', API_ID, API_HASH).start(bot_token=TOKEN)
 
 db = TinyDB('data_json/data.json', indent=4, separators=(',', ': '), encoding='utf-8')
 hashdb = TinyDB('data_json/hashtag.json', sort_keys=True, indent=4, separators=(',', ': '))

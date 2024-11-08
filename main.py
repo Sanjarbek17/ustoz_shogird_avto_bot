@@ -35,7 +35,7 @@ def send_data() -> None:
             text = to_text(dct)
             try:
                 bot.send_message(chat_id=user['id'], text=text)
-                time.sleep(5)  # Add a delay of 1 second between messages
+                time.sleep(1)  # Add a delay of 1 second between messages
             except telegram.error.RetryAfter as e:
                 time.sleep(e.retry_after)
                 continue
