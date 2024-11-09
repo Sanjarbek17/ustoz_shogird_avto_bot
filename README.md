@@ -2,9 +2,9 @@
 
 
 # How to run the bot on your local machine or server:
-If server is not configured to use async functions, you can you the sync version of the bot by running the following command:
+If server is not configured to use sync functions, you can you the async version of the bot by running the following command:
 ```bash
-git checkout dev
+git checkout main
 ```
 This will switch to the sync version of the bot.
 ## 1. Install the requirements:
