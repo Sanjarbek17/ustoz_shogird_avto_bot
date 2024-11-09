@@ -1,7 +1,7 @@
 import asyncio
 import os
-from telegram import Update, ForceReply
-from telegram.ext import Application, CommandHandler, ContextTypes
+from telegram import Update
+from telegram.ext import Application
 from telegram.error import NetworkError
 
 from bot.my_bot import handler
@@ -31,6 +31,14 @@ async def process_single_update(update_json):
         print(f"Network error during update processing: {e}")
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
+
+# set webhook
+async def set_webhook(url):
+    try:
+        bot_app = await init_bot()
+        await bot_app.set_webhook(url)
+    except NetworkError as e:
+        print(f"Network error during setting webhook: {e}")
 
 if __name__ == '__main__':
     
