@@ -4,7 +4,8 @@ import telegram
 from tinydb import Query, TinyDB
 
 from core.getting_data import to_text
-from telegram import Bot
+from telegram import Bot, Update
+from telegram.ext import Application
 from dotenv import load_dotenv
 import os
 import asyncio
@@ -81,20 +82,43 @@ async def send_new_message(message_data: dict) -> None:
                 print(f"Failed to send message to user {user['id']}: {e}")
                 continue
 
+async def run_bot_async() -> None:
+    """Run the bot asynchronously."""
+    from telegram.ext import Application
+    from bot.my_bot import handler
+
+    # Create the Application and pass it your bot's token.
+    application = Application.builder().token(token).build()
+
+    application = handler(application)
+
+    # Start polling asynchronously
+    await application.initialize()
+    await application.start()
+    await application.updater.start_polling()
+
+    # Keep the application running
+    try:
+        # Wait indefinitely
+        while True:
+            await asyncio.sleep(1)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        await application.updater.stop()
+        await application.stop()
+
+
 async def run_both() -> None:
     """Run both the bot and the listener concurrently."""
     from bot.scraping import start_listening
-    import threading
 
-    # Run the synchronous main() function in a separate thread
-    def run_bot():
-        main()
+    # Create tasks for both async functions
+    bot_task = asyncio.create_task(run_bot_async())
+    listener_task = asyncio.create_task(start_listening())
 
-    bot_thread = threading.Thread(target=run_bot, daemon=True)
-    bot_thread.start()
-
-    # Run the async listener
-    await start_listening()
+    # Run both tasks concurrently
+    await asyncio.gather(bot_task, listener_task)
 
 if __name__ == '__main__':
     if 'send_data' in os.sys.argv:
