@@ -11,13 +11,31 @@ This will switch to the sync version of the bot.
 ```
 pip install -r requirements.txt
 ```
-## 2. Create a .env file in the root directory of the project and add the following variables:
+## 2. Get your Telegram API credentials:
+To get your API_ID and API_HASH:
+1. Go to [my.telegram.org](https://my.telegram.org)
+2. Log in with your phone number
+3. Click on "API development tools"
+4. Fill out the form to create a new application:
+   - App title: Choose any name for your app
+   - Short name: Choose a short name (can be the same as title)
+   - Platform: Choose "Desktop" 
+   - Description: Optional description of your app
+5. After submitting, you'll get your `api_id` and `api_hash`
+
+To get your BOT_TOKEN:
+1. Start a chat with [@BotFather](https://t.me/botfather) on Telegram
+2. Send `/newbot` command
+3. Follow the instructions to create a new bot
+4. You'll receive a token that looks like `123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ`
+
+## 3. Create a .env file in the root directory of the project and add the following variables:
 ```
 API_ID=your_api_id
 API_HASH=your_api_hash
 BOT_TOKEN=your_bot_token
 ```
-## 3. Run the bot:
+## 4. Run the bot:
 ```bash
 python main.py
 ```

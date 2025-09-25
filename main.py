@@ -18,7 +18,7 @@ User = Query()
 user_table = userdb.table('user')
 
 load_dotenv()
-token = os.getenv('TOKEN')
+token = os.getenv('BOT_TOKEN')
 
 bot = Bot(token=token)
 
