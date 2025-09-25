@@ -490,5 +490,11 @@ if __name__ == "__main__":
             print("  python scraping.py periodic 7     # Weekly updates")
             print("  python scraping.py periodic 1     # Daily updates")
     else:
-        print("Starting listen mode by default...")
-        run_listener()
+        print("Usage: python scraping.py [listen|scrape|hashtags|periodic [days]]")
+        print("Examples:")
+        print("  python scraping.py listen         # Real-time listener mode")
+        print("  python scraping.py scrape         # Scrape all messages")
+        print("  python scraping.py hashtags       # Collect hashtags")
+        print("  python scraping.py periodic       # Monthly updates (30 days)")
+        print("  python scraping.py periodic 7     # Weekly updates")
+        print("  python scraping.py periodic 1     # Daily updates")
