@@ -435,7 +435,7 @@ async def get_hashtags():
                         )
 
 
-def run_main():
+def run_scrape_all():
     with client:
         client.loop.run_until_complete(scrape_all())
 
@@ -474,7 +474,7 @@ if __name__ == "__main__":
             run_listener()
         elif sys.argv[1] == "scrape":
             print("Starting scrape mode...")
-            run_main()
+            run_scrape_all()
         elif sys.argv[1] == "hashtags":
             print("Starting hashtag collection...")
             run_hashtags()
@@ -490,5 +490,5 @@ if __name__ == "__main__":
             print("  python scraping.py periodic 7     # Weekly updates")
             print("  python scraping.py periodic 1     # Daily updates")
     else:
-        print("Starting scrape mode by default...")
-        run_main()
+        print("Starting listen mode by default...")
+        run_listener()
