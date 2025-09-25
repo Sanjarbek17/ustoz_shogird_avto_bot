@@ -3,9 +3,13 @@ from telethon import TelegramClient, events
 from tinydb import TinyDB, Query
 import datetime
 import json
-
+import sys
 import os
+from pathlib import Path
 from dotenv import load_dotenv
+
+# Add parent directory to path to import main module
+sys.path.append(str(Path(__file__).parent.parent))
 
 from core.getting_data import to_json
 
@@ -90,7 +94,21 @@ def process_message(message):
 async def new_message_handler(event):
     """Handle new messages from the channel in real-time"""
     print(f"New message received: {event.message.id}")
-    process_message(event.message)
+    
+    # Process message and get the processed data
+    message_processed = process_message(event.message)
+    
+    if message_processed:
+        # Get the processed message data from database
+        processed_data = datadb.get(Query().message_id == event.message.id)
+        if processed_data:
+            # Import and call the send function from main.py
+            try:
+                import main
+                await main.send_new_message(processed_data)
+                print(f"Sent new message {event.message.id} to subscribed users")
+            except Exception as e:
+                print(f"Error sending message to users: {e}")
 
     # Also update hashtags if the message contains hashtags
     if event.message.text:
