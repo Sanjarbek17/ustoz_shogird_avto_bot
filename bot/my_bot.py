@@ -197,6 +197,9 @@ async def search(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
     user_hashtags = user_table.get(User.id == user.id)["hashtags"]
     # logger.info(user_hashtags)
+    if len(user_hashtags) == 0:
+        await update.message.reply_text("You have no hashtags. Please add hashtags first")
+        return
     # get data according to hashtags
     search = data.search(Data.hashtags.all(user_hashtags))
     # logger.info(search)
