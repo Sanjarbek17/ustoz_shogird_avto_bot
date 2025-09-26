@@ -10,32 +10,54 @@ from dotenv import load_dotenv
 import os
 import asyncio
 
-userdb = TinyDB('data_json/user.json', indent=4, separators=(',', ': '))
-datadb = TinyDB('data_json/data.json', indent=4, separators=(',', ': '), encoding='utf-8')
+userdb = TinyDB("data_json/user.json", indent=4, separators=(",", ": "))
+datadb = TinyDB(
+    "data_json/data.json", indent=4, separators=(",", ": "), encoding="utf-8"
+)
 
 Data = Query()
-data = datadb.table('data')
+data = datadb.table("data")
 User = Query()
-user_table = userdb.table('user')
+user_table = userdb.table("user")
 
 load_dotenv()
-token = os.getenv('BOT_TOKEN')
+token = os.getenv("BOT_TOKEN")
 
 bot = Bot(token=token)
+
 
 async def send_data() -> None:
     """Send a message according to all users hashtags."""
     # get users ids and hashtags
     users = user_table.all()
     for user in users:
-        user_hashtags = user['hashtags']
+        user_hashtags = user["hashtags"]
         search = data.search(Data.hashtags.all(user_hashtags))
         if len(search) == 0:
             continue
         for dct in search:
+            from core.getting_data import (
+                clean_markdown_for_telegram,
+                remove_all_markdown,
+            )
+
             text = to_text(dct)
+            cleaned_text = clean_markdown_for_telegram(str(text))
             try:
-                await bot.send_message(chat_id=user['id'], text=text)
+                try:
+                    await bot.send_message(
+                        chat_id=user["id"],
+                        text=cleaned_text,
+                        parse_mode=telegram.constants.ParseMode.MARKDOWN,
+                    )
+                except telegram.error.BadRequest as parse_error:
+                    # If markdown parsing fails, send as plain text
+                    plain_text = remove_all_markdown(str(text))
+                    await bot.send_message(chat_id=user["id"], text=plain_text)
+                    print(
+                        f"Sent plain text message to user {user['id']} due to markdown error"
+                    )
+                    continue
                 await asyncio.sleep(5)  # Add a delay of 1 second between messages
             except telegram.error.RetryAfter as e:
                 await asyncio.sleep(e.retry_after)
@@ -46,41 +68,71 @@ async def send_data() -> None:
 
 async def send_new_message(message_data: dict) -> None:
     """Send a new message to users who have matching hashtags."""
-    if not message_data or 'hashtags' not in message_data:
+    if not message_data or "hashtags" not in message_data:
         return
-    
-    message_hashtags = message_data['hashtags']
+
+    message_hashtags = message_data["hashtags"]
     if not message_hashtags:
         return
-    
+
     # Get all users
     users = user_table.all()
-    
+
     for user in users:
-        user_hashtags = user.get('hashtags', [])
+        user_hashtags = user.get("hashtags", [])
         if not user_hashtags:
             continue
-            
+
         # Check if user has any hashtag that matches the message hashtags
-        has_matching_hashtag = any(hashtag in message_hashtags for hashtag in user_hashtags)
-        
+        has_matching_hashtag = any(
+            hashtag in message_hashtags for hashtag in user_hashtags
+        )
+
         if has_matching_hashtag:
             try:
+                from core.getting_data import (
+                    clean_markdown_for_telegram,
+                    remove_all_markdown,
+                )
+
                 text = to_text(message_data)
-                await bot.send_message(chat_id=user['id'], text=text)
+                cleaned_text = clean_markdown_for_telegram(str(text))
+
+                try:
+                    await bot.send_message(
+                        chat_id=user["id"],
+                        text=cleaned_text,
+                        parse_mode=telegram.constants.ParseMode.MARKDOWN,
+                    )
+                except telegram.error.BadRequest as parse_error:
+                    # If markdown parsing fails, send as plain text
+                    plain_text = remove_all_markdown(str(text))
+                    await bot.send_message(chat_id=user["id"], text=plain_text)
+                    print(
+                        f"Sent plain text message to user {user['id']} due to markdown error"
+                    )
+                    return
+
                 await asyncio.sleep(1)  # Add a delay between messages
                 print(f"Sent new message to user {user['id']}")
             except telegram.error.RetryAfter as e:
                 await asyncio.sleep(e.retry_after)
                 # Retry sending
                 try:
-                    await bot.send_message(chat_id=user['id'], text=text)
+                    await bot.send_message(
+                        chat_id=user["id"],
+                        text=cleaned_text,
+                        parse_mode=telegram.constants.ParseMode.MARKDOWN,
+                    )
                     print(f"Retry successful: Sent message to user {user['id']}")
                 except Exception as retry_e:
-                    print(f"Failed to send message to user {user['id']} after retry: {retry_e}")
+                    print(
+                        f"Failed to send message to user {user['id']} after retry: {retry_e}"
+                    )
             except Exception as e:
                 print(f"Failed to send message to user {user['id']}: {e}")
                 continue
+
 
 async def run_bot_async() -> None:
     """Run the bot asynchronously."""
@@ -120,18 +172,22 @@ async def run_both() -> None:
     # Run both tasks concurrently
     await asyncio.gather(bot_task, listener_task)
 
-if __name__ == '__main__':
-    if 'send_data' in os.sys.argv:
+
+if __name__ == "__main__":
+    if "send_data" in os.sys.argv:
         asyncio.run(send_data())
-    elif 'hashtags' in os.sys.argv:
+    elif "hashtags" in os.sys.argv:
         from bot.scraping import run_hashtags
+
         run_hashtags()
-    elif 'get_data' in os.sys.argv:
+    elif "get_data" in os.sys.argv:
         from bot.scraping import run_main
+
         run_main()
-    elif 'listen' in os.sys.argv:
+    elif "listen" in os.sys.argv:
         # Run the listener mode for real-time message forwarding
         from bot.scraping import run_listener
+
         run_listener()
     else:
         # Run both bot and listener concurrently
