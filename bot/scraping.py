@@ -20,8 +20,8 @@ API_HASH = os.getenv("API_HASH")
 TOKEN = os.getenv("BOT_TOKEN")
 
 music_bot = "@music_storage1718_bot"
-# ustoz_shogird = "@UstozShogird"
-ustoz_shogird = "@sanjarbek1718"
+ustoz_shogird = "@UstozShogird"
+# ustoz_shogird = "@sanjarbek1718"
 
 client: TelegramClient = TelegramClient("anon", API_ID, API_HASH)
 bot: TelegramClient = TelegramClient("anon2", API_ID, API_HASH).start(bot_token=TOKEN)
