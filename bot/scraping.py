@@ -20,7 +20,8 @@ API_HASH = os.getenv("API_HASH")
 TOKEN = os.getenv("BOT_TOKEN")
 
 music_bot = "@music_storage1718_bot"
-ustoz_shogird = "@UstozShogird"
+ustoz_shogird = "https://t.me/UstozShogird"
+# ustoz_shogird = "@sanjarbek1718"
 
 client: TelegramClient = TelegramClient("anon", API_ID, API_HASH)
 bot: TelegramClient = TelegramClient("anon2", API_ID, API_HASH).start(bot_token=TOKEN)
@@ -77,7 +78,9 @@ def process_message(message):
         dct["date"] = message.date.isoformat() if message.date else None
         dct["views"] = getattr(message, "views", 0)
         dct["forwards"] = getattr(message, "forwards", 0)
-        dct["replies"] = getattr(message, "replies", None)
+        # Handle MessageReplies object properly
+        replies = getattr(message, "replies", None)
+        dct["replies"] = replies.replies if replies else None
         dct["edit_date"] = message.edit_date.isoformat() if message.edit_date else None
         dct["media_type"] = type(message.media).__name__ if message.media else None
         dct["text_length"] = len(message.text)
@@ -90,14 +93,35 @@ def process_message(message):
         return False
 
 
+# Add a general message listener for debugging
+@client.on(events.NewMessage())
+async def debug_all_messages(event):
+    """Debug handler to catch ALL messages"""
+    chat_info = getattr(
+        event.chat, "title", getattr(event.chat, "username", f"ID:{event.chat_id}")
+    )
+    print(f"📨 [DEBUG] Message from: {chat_info} (ID: {event.chat_id})")
+
+    # Check if this is our target channel
+    target_entity = await client.get_entity(ustoz_shogird)
+    if event.chat_id == target_entity.id:
+        print(f"🎯 TARGET CHANNEL DETECTED! This should trigger specific handler too!")
+
+
 @client.on(events.NewMessage(chats=ustoz_shogird))
 async def new_message_handler(event):
     """Handle new messages from the channel in real-time"""
+    print(f"🎯 NEW MESSAGE FROM USTOZ-SHOGIRD!")
+    print(f"   Message ID: {event.message.id}")
+    print(f"   Date: {event.message.date}")
+    print(
+        f"   Text preview: {event.message.text[:100] if event.message.text else 'No text'}..."
+    )
     print(f"New message received: {event.message.id}")
-    
+
     # Process message and get the processed data
     message_processed = process_message(event.message)
-    
+
     if message_processed:
         # Get the processed message data from database
         processed_data = datadb.get(Query().message_id == event.message.id)
@@ -105,6 +129,7 @@ async def new_message_handler(event):
             # Import and call the send function from main.py
             try:
                 import main
+
                 await main.send_new_message(processed_data)
                 print(f"Sent new message {event.message.id} to subscribed users")
             except Exception as e:
@@ -178,7 +203,9 @@ async def scrape_all():
             dct["date"] = message.date.isoformat() if message.date else None
             dct["views"] = getattr(message, "views", 0)
             dct["forwards"] = getattr(message, "forwards", 0)
-            dct["replies"] = getattr(message, "replies", None)
+            # Handle MessageReplies object properly
+            replies = getattr(message, "replies", None)
+            dct["replies"] = replies.replies if replies else None
             dct["edit_date"] = (
                 message.edit_date.isoformat() if message.edit_date else None
             )
