@@ -190,3 +190,7 @@ pyvenv.cfg
 pip-selfcheck.json
 
 # End of https://www.toptal.com/developers/gitignore/api/venv,python,dotenv
+# Session files and logs
+*.session-journal
+output.log
+bot.log
