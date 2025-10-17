@@ -14,6 +14,7 @@ bot.
 from pprint import pprint
 
 import os
+import asyncio
 from dotenv import load_dotenv
 from tinydb import TinyDB, Query
 
@@ -290,21 +291,57 @@ Tap a hashtag to remove it, or remove all at once:""",
 
 
 async def search(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Send a message when the text search is issued."""
-    # get user hashtags
+    """Show search options to user."""
     user = update.effective_user
     user_data = user_table.get(User.id == user.id)
     user_hashtags = user_data["hashtags"]
-    match_mode = user_data.get("match_mode", "any")
 
-    # logger.info(user_hashtags)
     if len(user_hashtags) == 0:
         await update.message.reply_text(
             "You have no hashtags. Please add hashtags first"
         )
         return
 
-    # get data according to hashtags and match mode
+    # Create keyboard with search limit options
+    keyboard = [
+        [InlineKeyboardButton("10 messages", callback_data="search_10")],
+        [InlineKeyboardButton("25 messages", callback_data="search_25")],
+        [InlineKeyboardButton("50 messages", callback_data="search_50")],
+        [InlineKeyboardButton("100 messages", callback_data="search_100")],
+        [InlineKeyboardButton("All messages", callback_data="search_all")],
+    ]
+
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    match_mode = user_data.get("match_mode", "any")
+    await update.message.reply_text(
+        f"""🔍 *Search Messages*
+
+*Current mode:* {match_mode.upper()}
+*Your hashtags:* {' '.join(user_hashtags)}
+
+How many recent messages do you want to search?""",
+        reply_markup=reply_markup,
+        parse_mode="Markdown",
+    )
+
+
+async def perform_search(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Perform the actual search with selected limit."""
+    query = update.callback_query
+    user = update.effective_user
+
+    await query.answer()
+
+    # Extract limit from callback data "search_10", "search_all", etc.
+    limit_str = query.data.split("_")[1]
+    limit = None if limit_str == "all" else int(limit_str)
+
+    user_data = user_table.get(User.id == user.id)
+    user_hashtags = user_data["hashtags"]
+    match_mode = user_data.get("match_mode", "any")
+
+    # Get data according to hashtags and match mode
     if match_mode == "advanced":
         # Advanced mode: (ALL required) AND (ANY optional)
         required_tags = user_data.get("required_hashtags", [])
@@ -339,23 +376,123 @@ async def search(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     else:
         search = data.search(Data.hashtags.any(user_hashtags))
 
-    # logger.info(search)
+    # Sort by most recent (assuming there's a timestamp or ID field)
+    # If your data has a timestamp, sort by it. Otherwise, reverse to get most recent
+    search = list(reversed(search))
+
+    # Apply limit
+    if limit:
+        search = search[:limit]
+
     if len(search) == 0:
-        await update.message.reply_text(
-            f"No data found with match mode: {match_mode.upper()}"
+        await query.edit_message_text(
+            f"❌ No data found with match mode: {match_mode.upper()}"
         )
         return
 
-    await update.message.reply_text(
-        f"🔍 Searching with mode: {match_mode.upper()}\nFound {len(search)} results"
+    # Store search context for stop functionality
+    context.user_data["searching"] = True
+    context.user_data["search_total"] = len(search)
+    context.user_data["search_sent"] = 0
+
+    # Create stop button
+    stop_keyboard = [
+        [InlineKeyboardButton("🛑 Stop Search", callback_data="stop_search")]
+    ]
+    stop_markup = InlineKeyboardMarkup(stop_keyboard)
+
+    status_message = await query.edit_message_text(
+        f"🔍 Searching with mode: {match_mode.upper()}\nFound {len(search)} results\nSending messages...",
+        reply_markup=stop_markup,
     )
 
+    context.user_data["status_message_id"] = status_message.message_id
+    context.user_data["status_chat_id"] = query.message.chat_id
+
+    sent_count = 0
     for dct in search:
+        # Check if user stopped the search
+        if not context.user_data.get("searching", False):
+            break
+
+        from core.getting_data import (
+            clean_markdown_for_telegram,
+            remove_all_markdown,
+        )
+
         text = to_text(dct)
+        cleaned_text = clean_markdown_for_telegram(str(text))
+
         try:
-            await update.message.reply_text(text)
+            try:
+                await context.bot.send_message(
+                    user.id,
+                    text=cleaned_text,
+                    parse_mode="Markdown",
+                )
+            except Exception as parse_error:
+                # If markdown parsing fails, send as plain text
+                plain_text = remove_all_markdown(str(text))
+                await context.bot.send_message(user.id, text=plain_text)
+                logger.info(
+                    f"Sent plain text message to user {user.id} due to markdown error"
+                )
+
+            sent_count += 1
+            context.user_data["search_sent"] = sent_count
+
+            # Update status every 5 messages
+            if sent_count % 5 == 0:
+                try:
+                    await context.bot.edit_message_text(
+                        chat_id=context.user_data["status_chat_id"],
+                        message_id=context.user_data["status_message_id"],
+                        text=f"🔍 Searching with mode: {match_mode.upper()}\nSent {sent_count}/{len(search)} messages...",
+                        reply_markup=stop_markup,
+                    )
+                except Exception:
+                    pass  # Ignore if message is too old to edit
+
+            # Small delay to avoid flooding
+            await asyncio.sleep(0.5)
         except Exception as e:
             logger.error(f"error {e}")
+
+    # Final status update
+    context.user_data["searching"] = False
+    try:
+        if sent_count == len(search):
+            await context.bot.edit_message_text(
+                chat_id=context.user_data["status_chat_id"],
+                message_id=context.user_data["status_message_id"],
+                text=f"✅ Search completed!\nSent {sent_count}/{len(search)} messages",
+            )
+        else:
+            await context.bot.edit_message_text(
+                chat_id=context.user_data["status_chat_id"],
+                message_id=context.user_data["status_message_id"],
+                text=f"🛑 Search stopped by user\nSent {sent_count}/{len(search)} messages",
+            )
+    except Exception:
+        pass
+
+
+async def stop_search(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Stop the ongoing search."""
+    query = update.callback_query
+    await query.answer("Stopping search...", show_alert=True)
+
+    context.user_data["searching"] = False
+
+    sent = context.user_data.get("search_sent", 0)
+    total = context.user_data.get("search_total", 0)
+
+    try:
+        await query.edit_message_text(
+            f"🛑 Search stopped!\nSent {sent}/{total} messages"
+        )
+    except Exception:
+        pass
 
 
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -721,9 +858,27 @@ async def send_data(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if len(search) == 0:
             continue
         for dct in search:
+            from core.getting_data import (
+                clean_markdown_for_telegram,
+                remove_all_markdown,
+            )
+
             text = to_text(dct)
+            cleaned_text = clean_markdown_for_telegram(str(text))
             try:
-                await context.bot.send_message(user["id"], text)
+                try:
+                    await context.bot.send_message(
+                        user["id"],
+                        text=cleaned_text,
+                        parse_mode="Markdown",
+                    )
+                except Exception as parse_error:
+                    # If markdown parsing fails, send as plain text
+                    plain_text = remove_all_markdown(str(text))
+                    await context.bot.send_message(user["id"], text=plain_text)
+                    logger.info(
+                        f"Sent plain text message to user {user['id']} due to markdown error"
+                    )
             except Exception as e:
                 logger.error(f"error {e}")
 
@@ -744,6 +899,8 @@ def handler(application):
     application.add_handler(
         CallbackQueryHandler(toggle_hashtag_group, pattern=r"^toggle_")
     )
+    application.add_handler(CallbackQueryHandler(perform_search, pattern=r"^search_"))
+    application.add_handler(CallbackQueryHandler(stop_search, pattern=r"^stop_search$"))
     application.add_handler(CallbackQueryHandler(remove_button, pattern=r"^remove"))
     application.add_handler(CallbackQueryHandler(my_button, pattern=r"^my"))
     application.add_handler(CallbackQueryHandler(button, pattern=r"^#"))
