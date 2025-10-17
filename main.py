@@ -32,7 +32,45 @@ async def send_data() -> None:
     users = user_table.all()
     for user in users:
         user_hashtags = user["hashtags"]
-        search = data.search(Data.hashtags.all(user_hashtags))
+        match_mode = user.get("match_mode", "any")
+
+        # Search based on user's match mode preference
+        if match_mode == "advanced":
+            # Advanced mode: (ALL required) AND (ANY optional)
+            required_tags = user.get("required_hashtags", [])
+            optional_tags = user.get("optional_hashtags", [])
+
+            # Get all data first
+            all_data = data.all()
+            search = []
+
+            for item in all_data:
+                item_hashtags = item.get("hashtags", [])
+
+                # Check required hashtags (all must be present)
+                required_match = (
+                    all(tag in item_hashtags for tag in required_tags)
+                    if required_tags
+                    else True
+                )
+
+                # Check optional hashtags (at least one must be present)
+                optional_match = (
+                    any(tag in item_hashtags for tag in optional_tags)
+                    if optional_tags
+                    else True
+                )
+
+                # Both conditions must be met
+                if required_match and optional_match:
+                    search.append(item)
+        elif match_mode == "all":
+            # User wants messages with ALL their hashtags
+            search = data.search(Data.hashtags.all(user_hashtags))
+        else:
+            # User wants messages with ANY of their hashtags (default)
+            search = data.search(Data.hashtags.any(user_hashtags))
+
         if len(search) == 0:
             continue
         for dct in search:
@@ -83,10 +121,42 @@ async def send_new_message(message_data: dict) -> None:
         if not user_hashtags:
             continue
 
-        # Check if user has any hashtag that matches the message hashtags
-        has_matching_hashtag = any(
-            hashtag in message_hashtags for hashtag in user_hashtags
-        )
+        # Get user's matching preference (default to "any")
+        match_mode = user.get("match_mode", "any")  # "any", "all", or "advanced"
+
+        # Check based on user preference
+        if match_mode == "advanced":
+            # Advanced mode: (ALL required) AND (ANY optional)
+            required_tags = user.get("required_hashtags", [])
+            optional_tags = user.get("optional_hashtags", [])
+
+            # Check if all required hashtags are present
+            required_match = (
+                all(hashtag in message_hashtags for hashtag in required_tags)
+                if required_tags
+                else True
+            )
+
+            # Check if any optional hashtag is present
+            optional_match = (
+                any(hashtag in message_hashtags for hashtag in optional_tags)
+                if optional_tags
+                else True
+            )
+
+            # Both conditions must be true
+            has_matching_hashtag = required_match and optional_match
+
+        elif match_mode == "all":
+            # User wants ALL their hashtags to be present in the message
+            has_matching_hashtag = all(
+                hashtag in message_hashtags for hashtag in user_hashtags
+            )
+        else:
+            # User wants ANY of their hashtags to be present in the message (default)
+            has_matching_hashtag = any(
+                hashtag in message_hashtags for hashtag in user_hashtags
+            )
 
         if has_matching_hashtag:
             try:
